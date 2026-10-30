@@ -1,0 +1,32 @@
+{
+  "name": "nutri-novo",
+  "version": "1.0.0",
+  "description": "Esquema de banco de dados relacional SQL desenvolvido especificamente para o ambiente de banco de dados da **Vercel** (**Vercel Postgres / Neon**).",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dompaschoal-create/SistemaNutriTeste.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/dompaschoal-create/SistemaNutriTeste/issues"
+  },
+  "homepage": "https://github.com/dompaschoal-create/SistemaNutriTeste#readme",
+  "dependencies": {
+    "@neondatabase/serverless": "^1.2.0",
+    "@vercel/postgres": "^0.10.0",
+    "lucide-react": "^1.65.0",
+    "next": "^16.4.3",
+    "pg": "^8.23.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  }
+}

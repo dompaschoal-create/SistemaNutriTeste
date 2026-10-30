@@ -1,9 +1,10 @@
 -- ==============================================================================
--- SISTEMA DE GESTÃO ESCOLAR - ESQUEMA DE BANCO DE DADOS (SQL / VERCEL POSTGRES)
+-- SISTEMA DE GESTÃO ESCOLAR - DIÁRIO ELETRÔNICO (SQL / VERCEL POSTGRES)
 -- Dialeto: PostgreSQL (Compatível nativamente com Vercel Postgres / Neon)
 -- ==============================================================================
 
--- 1. Remoção prévia das tabelas caso já existam (ordem respeitando as foreign keys)
+-- 1. Remoção prévia das tabelas respeitando as constraints de integridade
+DROP TABLE IF EXISTS Diario_Registro CASCADE;
 DROP TABLE IF EXISTS Aluno_Turma CASCADE;
 DROP TABLE IF EXISTS Professor_Turma CASCADE;
 DROP TABLE IF EXISTS Turma CASCADE;
@@ -15,12 +16,14 @@ DROP TABLE IF EXISTS Docente CASCADE;
 -- ==============================================================================
 CREATE TABLE Docente (
     nif INT PRIMARY KEY,
-    nome VARCHAR(150) NOT NULL
+    nome VARCHAR(150) NOT NULL,
+    senha VARCHAR(255) NOT NULL DEFAULT '123456'
 );
 
 COMMENT ON TABLE Docente IS 'Tabela que armazena os dados dos professores/docentes';
 COMMENT ON COLUMN Docente.nif IS 'Identificador único do docente (inteiro)';
 COMMENT ON COLUMN Docente.nome IS 'Nome completo do docente';
+COMMENT ON COLUMN Docente.senha IS 'Senha de acesso ao diário eletrônico';
 
 -- ==============================================================================
 -- TABELA: Aluno
@@ -55,7 +58,7 @@ COMMENT ON COLUMN Turma.empresa IS 'Indica se a turma é corporativa/vinculada �
 COMMENT ON COLUMN Turma.turno IS 'Turno das aulas (ex: Matutino, Vespertino, Noturno, Integral)';
 
 -- ==============================================================================
--- TABELA: Professor_Turma (Relacionamento N:N entre Docente e Turma)
+-- TABELA: Professor_Turma (Relacionamento Docente <-> Turma)
 -- ==============================================================================
 CREATE TABLE Professor_Turma (
     id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -76,18 +79,17 @@ CREATE TABLE Professor_Turma (
         UNIQUE (codigo_turma, nif_docente)
 );
 
-COMMENT ON TABLE Professor_Turma IS 'Tabela associativa que vincula docentes às turmas';
-COMMENT ON COLUMN Professor_Turma.id IS 'Identificador primário da associação (inteiro auto-incremento)';
-COMMENT ON COLUMN Professor_Turma.status_diario IS 'Status do preenchimento do diário de classe pelo docente';
-
 -- ==============================================================================
--- TABELA: Aluno_Turma (Relacionamento N:N entre Aluno e Turma)
+-- TABELA: Aluno_Turma (Relacionamento Aluno <-> Turma com Notas e Frequência)
 -- ==============================================================================
 CREATE TABLE Aluno_Turma (
     id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     codigo_turma_aluno INT NOT NULL,
     matricula_aluno INT NOT NULL,
     status_final VARCHAR(50) NOT NULL DEFAULT 'Matriculado',
+    nota NUMERIC(4,2) DEFAULT NULL,
+    faltas INT NOT NULL DEFAULT 0,
+    presenca_percentual NUMERIC(5,2) DEFAULT 100.00,
     CONSTRAINT fk_aluno_turma_turma 
         FOREIGN KEY (codigo_turma_aluno) 
         REFERENCES Turma (codigo) 
@@ -102,9 +104,19 @@ CREATE TABLE Aluno_Turma (
         UNIQUE (codigo_turma_aluno, matricula_aluno)
 );
 
-COMMENT ON TABLE Aluno_Turma IS 'Tabela associativa que registra a matrícula dos alunos nas turmas';
-COMMENT ON COLUMN Aluno_Turma.id IS 'Identificador primário da matrícula (inteiro auto-incremento)';
-COMMENT ON COLUMN Aluno_Turma.status_final IS 'Situação final do aluno (ex: Matriculado, Aprovado, Reprovado, Cancelado)';
+-- ==============================================================================
+-- TABELA: Diario_Registro (Aulas ministradas e chamada diária)
+-- ==============================================================================
+CREATE TABLE Diario_Registro (
+    id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    codigo_turma INT NOT NULL,
+    nif_docente INT NOT NULL,
+    data_aula DATE NOT NULL DEFAULT CURRENT_DATE,
+    conteudo TEXT NOT NULL,
+    criado_em TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_diario_turma FOREIGN KEY (codigo_turma) REFERENCES Turma(codigo) ON DELETE CASCADE,
+    CONSTRAINT fk_diario_docente FOREIGN KEY (nif_docente) REFERENCES Docente(nif) ON DELETE CASCADE
+);
 
 -- ==============================================================================
 -- ÍNDICES PARA OTIMIZAÇÃO DE CONSULTAS E JOINS
@@ -113,3 +125,4 @@ CREATE INDEX idx_prof_turma_cod ON Professor_Turma(codigo_turma);
 CREATE INDEX idx_prof_turma_nif ON Professor_Turma(nif_docente);
 CREATE INDEX idx_aluno_turma_cod ON Aluno_Turma(codigo_turma_aluno);
 CREATE INDEX idx_aluno_turma_mat ON Aluno_Turma(matricula_aluno);
+CREATE INDEX idx_diario_turma ON Diario_Registro(codigo_turma);
